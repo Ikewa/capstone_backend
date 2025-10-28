@@ -10,6 +10,7 @@ import notificationRoutes from './routes/notificationRoutes.js';
 import cropCatalogRoutes from './routes/cropCatalogRoutes.js';
 import bookingsRoutes from './routes/bookingsRoutes.js';
 import locationsRoutes from './routes/locationsRoutes.js';
+import profileRoutes from './routes/profileRoutes.js';
 
 dotenv.config();
 
@@ -29,6 +30,7 @@ app.use('/api/notifications', notificationRoutes);
 app.use('/api/crop-catalog', cropCatalogRoutes);
 app.use('/api/bookings', bookingsRoutes);
 app.use('/api/locations', locationsRoutes);
+app.use('/api/profile', profileRoutes);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
