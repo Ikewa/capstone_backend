@@ -15,6 +15,7 @@ import locationsRoutes from './routes/locationsRoutes.js';
 import profileRoutes from './routes/profileRoutes.js';
 import chatRoutes from './routes/chatRoutes.js';
 import { setupChatSocket } from './socket/chatSocket.js';
+import discussionGroupRoutes from './routes/discussionGroupRoutes.js';
 
 dotenv.config();
 
@@ -52,6 +53,7 @@ app.use('/api/bookings', bookingsRoutes);
 app.use('/api/locations', locationsRoutes);
 app.use('/api/profile', profileRoutes);
 app.use('/api/chat', chatRoutes); 
+app.use('/api/discussion-groups', discussionGroupRoutes);
 
 const PORT = process.env.PORT || 5000;
 
