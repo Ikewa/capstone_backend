@@ -1,0 +1,124 @@
+{
+  "info": {
+    "name": "AgriConnect USSD API",
+    "description": "Test USSD endpoints",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "1. Main Menu",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"sessionId\": \"ATUid_test123\",\n  \"serviceCode\": \"*384*1234#\",\n  \"phoneNumber\": \"+2348012345678\",\n  \"text\": \"\"\n}"
+        },
+        "url": {
+          "raw": "http://localhost:5000/api/ussd/test",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "5000",
+          "path": ["api", "ussd", "test"]
+        }
+      }
+    },
+    {
+      "name": "2. Crop Prices Menu",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"sessionId\": \"ATUid_test123\",\n  \"serviceCode\": \"*384*1234#\",\n  \"phoneNumber\": \"+2348012345678\",\n  \"text\": \"1\"\n}"
+        },
+        "url": {
+          "raw": "http://localhost:5000/api/ussd/test",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "5000",
+          "path": ["api", "ussd", "test"]
+        }
+      }
+    },
+    {
+      "name": "3. Rice Prices",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"sessionId\": \"ATUid_test123\",\n  \"serviceCode\": \"*384*1234#\",\n  \"phoneNumber\": \"+2348012345678\",\n  \"text\": \"1*1\"\n}"
+        },
+        "url": {
+          "raw": "http://localhost:5000/api/ussd/test",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "5000",
+          "path": ["api", "ussd", "test"]
+        }
+      }
+    },
+    {
+      "name": "4. Weather Info",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"sessionId\": \"ATUid_test123\",\n  \"serviceCode\": \"*384*1234#\",\n  \"phoneNumber\": \"+2348012345678\",\n  \"text\": \"2*Kano\"\n}"
+        },
+        "url": {
+          "raw": "http://localhost:5000/api/ussd/test",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "5000",
+          "path": ["api", "ussd", "test"]
+        }
+      }
+    },
+    {
+      "name": "5. Upcoming Events",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"sessionId\": \"ATUid_test123\",\n  \"serviceCode\": \"*384*1234#\",\n  \"phoneNumber\": \"+2348012345678\",\n  \"text\": \"5\"\n}"
+        },
+        "url": {
+          "raw": "http://localhost:5000/api/ussd/test",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "5000",
+          "path": ["api", "ussd", "test"]
+        }
+      }
+    }
+  ]
+}
