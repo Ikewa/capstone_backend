@@ -11,7 +11,7 @@ function queryPromise(sql, params = []) {
   });
 }
 
-// ==================== SUBMIT CROP REQUEST ====================
+// ==================== SUBMIT CROP REQUEST (WITH IMAGES) ====================
 export const submitCropRequest = async (req, res) => {
   try {
     console.log("🌾 Submitting crop request...");
@@ -24,7 +24,8 @@ export const submitCropRequest = async (req, res) => {
       landSizeUnit,
       previousCrops,
       challenges,
-      additionalInfo
+      additionalInfo,
+      images
     } = req.body;
 
     const farmer_id = req.user.id;
@@ -42,11 +43,14 @@ export const submitCropRequest = async (req, res) => {
       });
     }
 
+    // Store images as JSON string
+    const imagesJson = images ? JSON.stringify(images) : null;
+
     const sql = `
       INSERT INTO crop_requests 
       (farmer_id, location, soil_type, season, land_size, land_size_unit, 
-       previous_crops, challenges, additional_info)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+       previous_crops, challenges, additional_info, images)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
 
     const params = [
@@ -58,7 +62,8 @@ export const submitCropRequest = async (req, res) => {
       landSizeUnit || 'Hectares',
       previousCrops || '',
       challenges,
-      additionalInfo || ''
+      additionalInfo || '',
+      imagesJson
     ];
 
     const result = await queryPromise(sql, params);
@@ -115,6 +120,7 @@ export const getMyRequests = async (req, res) => {
         previousCrops: req.previous_crops,
         challenges: req.challenges,
         additionalInfo: req.additional_info,
+        images: req.images ? JSON.parse(req.images) : [],
         status: req.status,
         officer: req.officer_id ? {
           name: `${req.officer_first_name} ${req.officer_last_name}`,
@@ -169,8 +175,14 @@ export const getRequestById = async (req, res) => {
 
     const request = requests[0];
 
-    // Check authorization (farmer or officer or admin)
-    if (request.farmer_id !== user_id && req.user.role !== 'officer' && req.user.role !== 'admin') {
+    // Check authorization - HANDLE MULTIPLE ROLE FORMATS
+    const isOfficer = 
+      req.user.role === 'officer' || 
+      req.user.role === 'Officer' || 
+      req.user.role === 'Extension Officer' ||
+      req.user.role === 'admin';
+
+    if (request.farmer_id !== user_id && !isOfficer) {
       return res.status(403).json({ 
         message: 'Not authorized to view this request' 
       });
@@ -197,6 +209,7 @@ export const getRequestById = async (req, res) => {
       previousCrops: request.previous_crops || '',
       challenges: request.challenges,
       additionalInfo: request.additional_info || '',
+      images: request.images ? JSON.parse(request.images) : [],
       status: request.status,
       farmer: {
         _id: request.farmer_id,
@@ -235,9 +248,18 @@ export const getRequestById = async (req, res) => {
 export const getPendingRequests = async (req, res) => {
   try {
     console.log("📋 Fetching pending crop requests...");
+    console.log("👤 User role:", req.user.role);
+    console.log("👤 User ID:", req.user.id);
     
-    // Check if user is officer
-    if (req.user.role !== 'officer' && req.user.role !== 'admin') {
+    // Check if user is officer - HANDLE BOTH ROLE FORMATS
+    const isOfficer = 
+      req.user.role === 'officer' || 
+      req.user.role === 'Officer' || 
+      req.user.role === 'Extension Officer' ||
+      req.user.role === 'admin';
+
+    if (!isOfficer) {
+      console.log("❌ User is not an officer. Role:", req.user.role);
       return res.status(403).json({ 
         message: 'Only officers can access pending requests' 
       });
@@ -273,6 +295,7 @@ export const getPendingRequests = async (req, res) => {
         previousCrops: req.previous_crops,
         challenges: req.challenges,
         additionalInfo: req.additional_info,
+        images: req.images ? JSON.parse(req.images) : [],
         farmer: {
           name: `${req.farmer_first_name} ${req.farmer_last_name}`,
           email: req.farmer_email,
@@ -297,8 +320,14 @@ export const provideRecommendation = async (req, res) => {
   try {
     console.log("✍️ Officer providing recommendation...");
     
-    // Check if user is officer
-    if (req.user.role !== 'officer' && req.user.role !== 'admin') {
+    // HANDLE BOTH ROLE FORMATS
+    const isOfficer = 
+      req.user.role === 'officer' || 
+      req.user.role === 'Officer' || 
+      req.user.role === 'Extension Officer' ||
+      req.user.role === 'admin';
+
+    if (!isOfficer) {
       return res.status(403).json({ 
         message: 'Only officers can provide recommendations' 
       });
@@ -314,7 +343,7 @@ export const provideRecommendation = async (req, res) => {
       });
     }
 
-    // Check if request exists and get request details
+    // Check if request exists
     const checkSql = `
       SELECT cr.*, u.location as farmer_location 
       FROM crop_requests cr
@@ -367,7 +396,7 @@ export const provideRecommendation = async (req, res) => {
 
     console.log("✅ Recommendation provided successfully");
 
-    // 🔔 CREATE NOTIFICATION for farmer
+    // Create notification for farmer
     const officerSql = `SELECT first_name, last_name FROM users WHERE id = ?`;
     const officers = await queryPromise(officerSql, [officer_id]);
     const officer = officers[0];
@@ -417,7 +446,7 @@ export const deleteRequest = async (req, res) => {
       });
     }
 
-    // Delete request (recommended_crops will cascade delete)
+    // Delete request
     const deleteSql = `DELETE FROM crop_requests WHERE id = ?`;
     await queryPromise(deleteSql, [id]);
 
@@ -431,5 +460,32 @@ export const deleteRequest = async (req, res) => {
       message: 'Error deleting request', 
       error: error.message 
     });
+  }
+};
+
+// ==================== UPLOAD CROP REQUEST IMAGES ====================
+export const uploadRequestImagesController = async (req, res) => {
+  try {
+    console.log("📸 Uploading crop request images...");
+
+    if (!req.files || req.files.length === 0) {
+      return res.status(400).json({ message: "No image files provided" });
+    }
+
+    // Generate URLs for all uploaded images
+    const imageUrls = req.files.map(file => 
+      `http://localhost:5000/uploads/crop-requests/${file.filename}`
+    );
+
+    console.log(`✅ ${req.files.length} images uploaded successfully`);
+
+    res.json({
+      message: "Images uploaded successfully",
+      imageUrls: imageUrls
+    });
+
+  } catch (error) {
+    console.error("💥 Error uploading images:", error);
+    res.status(500).json({ message: "Server error", error: error.message });
   }
 };

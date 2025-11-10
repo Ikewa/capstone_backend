@@ -1,20 +1,25 @@
 import express from 'express';
-import { 
-  getCropRecommendations, 
-  getAllCrops, 
-  getCropById 
-} from '../controllers/cropCatalogController.js';
 import { protect } from '../middleware/authMiddleware.js';
+import {
+  getAllCrops,
+  getCrop,
+  createCrop,
+  getCropRecommendations,
+  uploadCropImageController
+} from '../controllers/cropCatalogController.js';
+import { uploadCropImage } from '../middleware/uploadMiddleware.js';  // ← ADD THIS IMPORT
 
 const router = express.Router();
 
-// Get personalized crop recommendations (requires auth to get user location)
+// Public routes
+router.get('/', getAllCrops);
 router.get('/recommendations', protect, getCropRecommendations);
+router.get('/:id', getCrop);
 
-// Get all crops (public)
-router.get('/all', getAllCrops);
+// Protected routes (for adding crops)
+router.post('/', protect, createCrop);
 
-// Get single crop details
-router.get('/:id', getCropById);
+// Image upload route
+router.post('/upload-image', protect, uploadCropImage.single('image'), uploadCropImageController);
 
 export default router;

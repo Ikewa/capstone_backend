@@ -12,7 +12,6 @@ import {
 
 const router = express.Router();
 
-// All routes here require authentication
 router.get("/Home", protect, getHome);
 router.get("/Notifications", protect, getNotifications);
 router.get("/Crop", protect, getCrop);

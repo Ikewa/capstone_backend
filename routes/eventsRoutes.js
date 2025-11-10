@@ -9,7 +9,9 @@ import {
   getMyEvents,
   getEventRegistrations,
   updateEvent,
-  deleteEvent
+  deleteEvent,
+  unregisterFromEvent,
+  checkRegistrationStatus
 } from "../controllers/eventsController.js";
 
 const router = express.Router();
@@ -21,6 +23,11 @@ router.get("/:id", getEvent);
 // Protected routes (all authenticated users)
 router.post("/register", protect, registerForEvent);
 router.post("/cancel", protect, cancelRegistration);
+
+// Event registration routes (better paths)
+router.post('/:eventId/register', protect, registerForEvent);
+router.delete('/:eventId/register', protect, unregisterFromEvent);
+router.get('/:eventId/registration-status', protect, checkRegistrationStatus);
 
 // Officer-only routes
 router.post("/", protect, createEvent);

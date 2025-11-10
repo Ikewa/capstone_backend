@@ -18,15 +18,24 @@ import { setupChatSocket } from './socket/chatSocket.js';
 import discussionGroupRoutes from './routes/discussionGroupRoutes.js';
 import notesRoutes from './routes/notesRoutes.js';
 import ussdRoutes from './routes/ussdRoutes.js';
+import adminRoutes from './routes/adminRoutes.js';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import uploadRoutes from './routes/uploadRoutes.js';
 
 dotenv.config();
 
 const app = express();
 const httpServer = createServer(app); 
 
+// Get __dirname equivalent in ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 // Middleware
 app.use(express.json());
 app.use(cors());
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Socket.io setup
 const io = new Server(httpServer, {
@@ -58,6 +67,8 @@ app.use('/api/chat', chatRoutes);
 app.use('/api/discussion-groups', discussionGroupRoutes);
 app.use('/api/notes', notesRoutes);
 app.use('/api', ussdRoutes);
+app.use('/api/admin', adminRoutes);
+app.use('/api/upload', uploadRoutes);
 
 const PORT = process.env.PORT || 5000;
 

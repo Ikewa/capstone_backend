@@ -491,3 +491,65 @@ export const cancelRegistration = async (req, res) => {
     res.status(500).json({ message: "Server error", error: error.message });
   }
 };
+
+// ==================== UNREGISTER FROM EVENT (by eventId in URL) ====================
+export const unregisterFromEvent = async (req, res) => {
+  try {
+    const { eventId } = req.params;
+    const user_id = req.user.id;
+
+    console.log(`❌ Unregistering user ${user_id} from event ${eventId}`);
+
+    // Check if registered
+    const [registration] = await queryPromise(
+      "SELECT * FROM event_registrations WHERE event_id = ? AND user_id = ? AND status = 'registered'",
+      [eventId, user_id]
+    );
+
+    if (!registration) {
+      return res.status(400).json({ message: "You are not registered for this event" });
+    }
+
+    // Cancel registration
+    await queryPromise(
+      "UPDATE event_registrations SET status = 'cancelled' WHERE id = ?",
+      [registration.id]
+    );
+
+    console.log("✅ Unregistration successful");
+
+    res.json({ message: "Successfully unregistered from event" });
+
+  } catch (error) {
+    console.error("💥 Error unregistering from event:", error);
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+
+// ==================== CHECK REGISTRATION STATUS ====================
+export const checkRegistrationStatus = async (req, res) => {
+  try {
+    const { eventId } = req.params;
+    const user_id = req.user.id;
+
+    console.log(`🔍 Checking registration status for user ${user_id} and event ${eventId}`);
+
+    const [registration] = await queryPromise(
+      "SELECT * FROM event_registrations WHERE event_id = ? AND user_id = ? AND status = 'registered'",
+      [eventId, user_id]
+    );
+
+    const isRegistered = !!registration;
+
+    console.log(`✅ Registration status: ${isRegistered ? 'Registered' : 'Not registered'}`);
+
+    res.json({ 
+      isRegistered,
+      registration: registration || null
+    });
+
+  } catch (error) {
+    console.error("💥 Error checking registration status:", error);
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};

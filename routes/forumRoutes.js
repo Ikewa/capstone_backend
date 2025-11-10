@@ -1,5 +1,5 @@
-import express from "express";
-import { protect } from "../middleware/authMiddleware.js";
+import express from 'express';
+import { protect } from '../middleware/authMiddleware.js';
 import {
   getAllQuestions,
   getQuestion,
@@ -7,18 +7,22 @@ import {
   createAnswer,
   vote,
   acceptAnswer
-} from "../controllers/forumControllers.js";
+} from '../controllers/forumControllers.js';
 
 const router = express.Router();
 
-// Public routes
-router.get("/questions", getAllQuestions);
-router.get("/questions/:id", getQuestion);
+// Question routes
+router.get('/questions', getAllQuestions);
+router.get('/questions/:id', getQuestion);
+router.post('/questions', protect, createQuestion);
 
-// Protected routes (require authentication)
-router.post("/questions", protect, createQuestion);
-router.post("/answers", protect, createAnswer);
-router.post("/vote", protect, vote);
-router.post("/accept-answer", protect, acceptAnswer);
+// Answer routes
+router.post('/answers', protect, createAnswer);
+
+// Vote route
+router.post('/vote', protect, vote);
+
+// Accept answer route
+router.post('/accept-answer', protect, acceptAnswer);
 
 export default router;

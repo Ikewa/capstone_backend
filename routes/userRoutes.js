@@ -6,7 +6,7 @@ import { protect } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
-// SIMPLE PROMISE WRAPPER (because your db uses callbacks)
+// SIMPLE PROMISE WRAPPER
 function queryPromise(sql, params) {
   return new Promise((resolve, reject) => {
     db.query(sql, params, (err, results) => {
@@ -73,10 +73,10 @@ router.post("/signup", async (req, res) => {
     console.log("🔐 Hashing password...");
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Insert user WITH EMAIL AND ROLE
+    // Insert user WITH EMAIL AND ROLE (is_admin defaults to FALSE)
     console.log("💾 Inserting into database...");
     const result = await queryPromise(
-      "INSERT INTO users (first_name, last_name, email, role, location, password) VALUES (?, ?, ?, ?, ?, ?)",
+      "INSERT INTO users (first_name, last_name, email, role, location, password, is_admin) VALUES (?, ?, ?, ?, ?, ?, FALSE)",
       [first_name, last_name, email, role, location, hashedPassword]
     );
 
@@ -107,7 +107,7 @@ router.post("/login", async (req, res) => {
       return res.status(400).json({ message: "Email and password are required" });
     }
 
-    // Find user by email
+    // Find user by email (include is_admin field)
     console.log("🔍 Looking for user...");
     const users = await queryPromise(
       "SELECT * FROM users WHERE email = ?",
@@ -122,6 +122,7 @@ router.post("/login", async (req, res) => {
 
     const user = users[0];
     console.log("✅ User found, ID:", user.id);
+    console.log("🛡️ Is admin:", user.is_admin);
 
     // Check password
     console.log("🔐 Checking password...");
@@ -134,15 +135,16 @@ router.post("/login", async (req, res) => {
 
     console.log("✅ Password correct!");
 
-    // Generate token with role
+    // Generate token with role and is_admin
     const token = jwt.sign(
       { 
         id: user.id, 
         first_name: user.first_name, 
         last_name: user.last_name, 
         email: user.email,
-        role: user.role,  // Include role in token
-        location: user.location 
+        role: user.role,
+        location: user.location,
+        is_admin: user.is_admin || false  // Include is_admin in token
       },
       process.env.JWT_SECRET,
       { expiresIn: "7d" }
@@ -158,8 +160,10 @@ router.post("/login", async (req, res) => {
         first_name: user.first_name, 
         last_name: user.last_name, 
         email: user.email,
-        role: user.role,  // Include role in response
-        location: user.location 
+        role: user.role,
+        location: user.location,
+        avatar_url: user.avatar_url,
+        is_admin: user.is_admin || false  // Include is_admin in response
       }
     });
 
@@ -175,7 +179,7 @@ router.get("/profile", protect, async (req, res) => {
     console.log("🔍 Getting profile for user ID:", req.user.id);
 
     const users = await queryPromise(
-      "SELECT id, first_name, last_name, email, role, location, created_at FROM users WHERE id = ?", 
+      "SELECT id, first_name, last_name, email, role, location, avatar_url, bio, is_admin, created_at FROM users WHERE id = ?", 
       [req.user.id]
     );
 
@@ -231,7 +235,7 @@ router.put("/profile", protect, async (req, res) => {
       return res.status(400).json({ message: "Email already in use by another account" });
     }
 
-    // Update user
+    // Update user (don't allow updating is_admin here)
     await queryPromise(
       "UPDATE users SET first_name = ?, last_name = ?, email = ?, role = ?, location = ? WHERE id = ?",
       [first_name, last_name, email, role, location, userId]

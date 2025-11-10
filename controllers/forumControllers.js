@@ -59,6 +59,17 @@ export const getAllQuestions = async (req, res) => {
         [question.id]
       );
       question.tags = tags.map(t => t.tag);
+      
+      // Parse images if they exist
+      if (question.images) {
+        try {
+          question.images = JSON.parse(question.images);
+        } catch (e) {
+          question.images = [];
+        }
+      } else {
+        question.images = [];
+      }
     }
 
     console.log("✅ Found", questions.length, "questions");
@@ -104,18 +115,43 @@ export const getQuestion = async (req, res) => {
     );
     question.tags = tags.map(t => t.tag);
 
+    // Parse images if they exist
+    if (question.images) {
+      try {
+        question.images = JSON.parse(question.images);
+      } catch (e) {
+        question.images = [];
+      }
+    } else {
+      question.images = [];
+    }
+
     // Get answers with user info and role
     const answers = await queryPromise(`
       SELECT 
         a.*,
         u.first_name,
         u.last_name,
-        u.role
+        u.role,
+        u.location
       FROM answers a
       LEFT JOIN users u ON a.user_id = u.id
       WHERE a.question_id = ?
       ORDER BY a.is_accepted DESC, a.votes DESC, a.created_at ASC
     `, [id]);
+
+    // Parse images for each answer
+    for (let answer of answers) {
+      if (answer.images) {
+        try {
+          answer.images = JSON.parse(answer.images);
+        } catch (e) {
+          answer.images = [];
+        }
+      } else {
+        answer.images = [];
+      }
+    }
 
     question.answers = answers;
 
@@ -132,11 +168,11 @@ export const getQuestion = async (req, res) => {
 // ==================== CREATE QUESTION ====================
 export const createQuestion = async (req, res) => {
   try {
-    const { title, description, tags, image_url } = req.body;
+    const { title, description, tags, image_url, images } = req.body;
     const user_id = req.user.id;
     const location = req.user.location;
 
-    console.log("📝 Creating question:", { title, user_id });
+    console.log("📝 Creating question:", { title, user_id, has_images: !!images });
 
     // Validation
     if (!title || !description) {
@@ -147,10 +183,13 @@ export const createQuestion = async (req, res) => {
       return res.status(400).json({ message: "Title must be at least 10 characters" });
     }
 
+    // Store images as JSON string
+    const imagesJson = images ? JSON.stringify(images) : null;
+
     // Insert question
     const result = await queryPromise(
-      "INSERT INTO questions (user_id, title, description, location, image_url) VALUES (?, ?, ?, ?, ?)",
-      [user_id, title, description, location, image_url || null]
+      "INSERT INTO questions (user_id, title, description, location, image_url, images) VALUES (?, ?, ?, ?, ?, ?)",
+      [user_id, title, description, location, image_url || null, imagesJson]
     );
 
     const question_id = result.insertId;
@@ -181,7 +220,7 @@ export const createQuestion = async (req, res) => {
 // ==================== CREATE ANSWER ====================
 export const createAnswer = async (req, res) => {
   try {
-    const { question_id, content, image_url } = req.body;
+    const { question_id, content, image_url, images } = req.body;
     const user_id = req.user.id;
 
     console.log("📝 Creating answer for question", question_id);
@@ -201,10 +240,13 @@ export const createAnswer = async (req, res) => {
       return res.status(404).json({ message: "Question not found" });
     }
 
+    // Store images as JSON string
+    const imagesJson = images ? JSON.stringify(images) : null;
+
     // Insert answer
     const result = await queryPromise(
-      "INSERT INTO answers (question_id, user_id, content, image_url) VALUES (?, ?, ?, ?)",
-      [question_id, user_id, content, image_url || null]
+      "INSERT INTO answers (question_id, user_id, content, image_url, images) VALUES (?, ?, ?, ?, ?)",
+      [question_id, user_id, content, image_url || null, imagesJson]
     );
 
     console.log("✅ Answer created with ID:", result.insertId);
