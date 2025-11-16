@@ -474,7 +474,7 @@ export const uploadRequestImagesController = async (req, res) => {
 
     // Generate URLs for all uploaded images
     const imageUrls = req.files.map(file => 
-      `http://localhost:5000/uploads/crop-requests/${file.filename}`
+      `/uploads/crop-requests/${file.filename}`
     );
 
     console.log(`✅ ${req.files.length} images uploaded successfully`);

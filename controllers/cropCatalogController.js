@@ -215,7 +215,7 @@ export const uploadCropImageController = async (req, res) => {
 
     res.json({
       message: "Image uploaded successfully",
-      imageUrl: `http://localhost:5000${imageUrl}`
+      imageUrl: imageUrl
     });
 
   } catch (error) {

@@ -15,7 +15,7 @@ const handleImageUpload = (folder) => async (req, res) => {
     if (!req.files || req.files.length === 0) {
       if (req.file) {
         // Single file upload (profile picture)
-        const imageUrl = `http://localhost:5000/uploads/${folder}/${req.file.filename}`;
+        const imageUrl = `/uploads/${folder}/${req.file.filename}`;
         return res.json({
           message: "Image uploaded successfully",
           imageUrl: imageUrl
@@ -26,7 +26,7 @@ const handleImageUpload = (folder) => async (req, res) => {
 
     // Multiple files upload
     const imageUrls = req.files.map(file => 
-      `http://localhost:5000/uploads/${folder}/${file.filename}`
+      `/uploads/${folder}/${file.filename}`
     );
 
     res.json({
