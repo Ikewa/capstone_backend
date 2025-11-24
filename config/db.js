@@ -25,4 +25,4 @@ pool.promise().query('SELECT 1')
   .then(() => console.log("✅ Database connection tested successfully!"))
   .catch(err => console.error("❌ Database connection test failed:", err));
 
-export default pool.promise();
+export default pool;
