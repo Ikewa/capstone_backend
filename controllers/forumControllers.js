@@ -11,6 +11,20 @@ function queryPromise(sql, params = []) {
   });
 }
 
+// Helper function to convert relative image URLs to absolute
+function convertToAbsoluteUrls(images, baseUrl = 'https://agriconnect-backend-x2h4.onrender.com') {
+  if (!images) return [];
+  
+  try {
+    const parsedImages = typeof images === 'string' ? JSON.parse(images) : images;
+    return parsedImages.map(img => 
+      img.startsWith('http') ? img : `${baseUrl}${img}`
+    );
+  } catch (e) {
+    return [];
+  }
+}
+
 // ==================== GET ALL QUESTIONS ====================
 export const getAllQuestions = async (req, res) => {
   try {
@@ -19,7 +33,7 @@ export const getAllQuestions = async (req, res) => {
     const { search, tag, location } = req.query;
 
     let sql = `
-      SELECT 
+      SELECT
         q.*,
         u.first_name,
         u.last_name,
@@ -59,17 +73,9 @@ export const getAllQuestions = async (req, res) => {
         [question.id]
       );
       question.tags = tags.map(t => t.tag);
-      
-      // Parse images if they exist
-      if (question.images) {
-        try {
-          question.images = JSON.parse(question.images);
-        } catch (e) {
-          question.images = [];
-        }
-      } else {
-        question.images = [];
-      }
+
+      // Parse images and convert to absolute URLs
+      question.images = convertToAbsoluteUrls(question.images);
     }
 
     console.log("✅ Found", questions.length, "questions");
@@ -77,7 +83,7 @@ export const getAllQuestions = async (req, res) => {
     res.json({ questions });
 
   } catch (error) {
-    console.error("💥 Error fetching questions:", error);
+    console.error("❌ Error fetching questions:", error);
     res.status(500).json({ message: "Server error", error: error.message });
   }
 };
@@ -93,7 +99,7 @@ export const getQuestion = async (req, res) => {
 
     // Get question with user info
     const [question] = await queryPromise(`
-      SELECT 
+      SELECT
         q.*,
         u.first_name,
         u.last_name,
@@ -115,20 +121,12 @@ export const getQuestion = async (req, res) => {
     );
     question.tags = tags.map(t => t.tag);
 
-    // Parse images if they exist
-    if (question.images) {
-      try {
-        question.images = JSON.parse(question.images);
-      } catch (e) {
-        question.images = [];
-      }
-    } else {
-      question.images = [];
-    }
+    // Parse images and convert to absolute URLs
+    question.images = convertToAbsoluteUrls(question.images);
 
     // Get answers with user info and role
     const answers = await queryPromise(`
-      SELECT 
+      SELECT
         a.*,
         u.first_name,
         u.last_name,
@@ -140,17 +138,9 @@ export const getQuestion = async (req, res) => {
       ORDER BY a.is_accepted DESC, a.votes DESC, a.created_at ASC
     `, [id]);
 
-    // Parse images for each answer
+    // Parse images for each answer and convert to absolute URLs
     for (let answer of answers) {
-      if (answer.images) {
-        try {
-          answer.images = JSON.parse(answer.images);
-        } catch (e) {
-          answer.images = [];
-        }
-      } else {
-        answer.images = [];
-      }
+      answer.images = convertToAbsoluteUrls(answer.images);
     }
 
     question.answers = answers;
@@ -160,7 +150,7 @@ export const getQuestion = async (req, res) => {
     res.json({ question });
 
   } catch (error) {
-    console.error("💥 Error fetching question:", error);
+    console.error("❌ Error fetching question:", error);
     res.status(500).json({ message: "Server error", error: error.message });
   }
 };
@@ -206,13 +196,13 @@ export const createQuestion = async (req, res) => {
 
     console.log("✅ Question created with ID:", question_id);
 
-    res.status(201).json({ 
+    res.status(201).json({
       message: "Question created successfully",
       question_id
     });
 
   } catch (error) {
-    console.error("💥 Error creating question:", error);
+    console.error("❌ Error creating question:", error);
     res.status(500).json({ message: "Server error", error: error.message });
   }
 };
@@ -232,10 +222,10 @@ export const createAnswer = async (req, res) => {
 
     // Check if question exists and get question details
     const [question] = await queryPromise(
-      "SELECT id, user_id, title FROM questions WHERE id = ?", 
+      "SELECT id, user_id, title FROM questions WHERE id = ?",
       [question_id]
     );
-    
+
     if (!question) {
       return res.status(404).json({ message: "Question not found" });
     }
@@ -245,7 +235,7 @@ export const createAnswer = async (req, res) => {
 
     // Insert answer
     const result = await queryPromise(
-      "INSERT INTO answers (question_id, user_id, content, image_url, images) VALUES (?, ?, ?, ?, ?)",
+      "INSERT INTO answers (question_id, user_id, content, image_url, images) VALUES (?, ?, ?, ?, ?)",      
       [question_id, user_id, content, image_url || null, imagesJson]
     );
 
@@ -264,7 +254,7 @@ export const createAnswer = async (req, res) => {
           question.user_id,
           'answer',
           'New Answer to Your Question',
-          `${answerer.first_name} ${answerer.last_name} answered your question: "${question.title}"`,
+          `${answerer.first_name} ${answerer.last_name} answered your question: "${question.title}"`,       
           `/questions/${question_id}`,
           question_id
         );
@@ -272,13 +262,13 @@ export const createAnswer = async (req, res) => {
       }
     }
 
-    res.status(201).json({ 
+    res.status(201).json({
       message: "Answer created successfully",
       answer_id: result.insertId
     });
 
   } catch (error) {
-    console.error("💥 Error creating answer:", error);
+    console.error("❌ Error creating answer:", error);
     res.status(500).json({ message: "Server error", error: error.message });
   }
 };
@@ -359,7 +349,7 @@ export const vote = async (req, res) => {
     res.json({ message: "Vote recorded successfully" });
 
   } catch (error) {
-    console.error("💥 Error voting:", error);
+    console.error("❌ Error voting:", error);
     res.status(500).json({ message: "Server error", error: error.message });
   }
 };
@@ -378,8 +368,8 @@ export const acceptAnswer = async (req, res) => {
       return res.status(404).json({ message: "Answer not found" });
     }
 
-    const [question] = await queryPromise("SELECT * FROM questions WHERE id = ?", [answer.question_id]);
-    
+    const [question] = await queryPromise("SELECT * FROM questions WHERE id = ?", [answer.question_id]);    
+
     // Only question author can accept answers
     if (question.user_id !== user_id) {
       return res.status(403).json({ message: "Only question author can accept answers" });
@@ -402,7 +392,7 @@ export const acceptAnswer = async (req, res) => {
     res.json({ message: "Answer accepted successfully" });
 
   } catch (error) {
-    console.error("💥 Error accepting answer:", error);
+    console.error("❌ Error accepting answer:", error);
     res.status(500).json({ message: "Server error", error: error.message });
   }
 };
